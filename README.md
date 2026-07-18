@@ -27,6 +27,17 @@
 - 处理 GNOME 媒体键的守护进程 `gsd-media-keys` 启动得比 `pipewire-pulse` 音频服务还要早。`gsd-media-keys` 试图获取默认音频输出设备时失败报错 `Unable to get default sink`，从而放弃处理音量键。
 - **修复：** 在 `~/.config/systemd/user/` 中建立一个 override 配置文件，利用 `After=pipewire-pulse.service` 显式强制定义依赖关系。这能确保在音频服务准备就绪前，按键接管程序暂缓启动，从根源消除竞态。
 
+### 4. 外置 U 盘无法挂载与 USB 无线鼠标频繁断连 (`usb-ntfs-mouse-fix/`)
+**问题：** 插入 NTFS 格式外置 U 盘（含 Ventoy 盘）时，文件管理器报错无法挂载（`wrong fs type, bad option, bad superblock`）；同时 ASUS ROG OMNI 等 2.4G 无线鼠标接收器频繁断开重连。
+**技术路线：**
+- 内核日志显示根因是 `ntfs3: volume is dirty and "force" flag is not set!`。Ubuntu 26.04 默认用内核 `ntfs3` 挂载 NTFS，卷带 dirty 脏标志时直接拒挂；界面错误信息较为笼统。
+- 鼠标侧日志可见 `usb … USB disconnect` 周期性出现，属于 USB autosuspend 将接收器休眠后唤醒失败。
+- **修复（仅新增专用文件，不改 GRUB/内核参数等无关配置）：**
+  - udev 规则：仅对 USB 可移动 NTFS 分区在插入时执行 `ntfsfix -d` 优先清 dirty。
+  - `/etc/udisks2/mount_options.conf`：仅覆盖 NTFS，优先 `ntfs-3g`，并允许 `ntfs3` 的 `force`。
+  - udev 规则：仅对 ROG OMNI 接收器 (`0b05:1ace`) 关闭 autosuspend。
+- 双系统 Windows 侧提供可选 `Clear-UsbNtfsDirty.ps1`（手动运行；默认不改 Windows 系统文件）。
+
 ---
 
 # Ubuntu 26.04 Compatibility Fixes (Lenovo ThinkPad)
@@ -55,3 +66,15 @@ This repository provides technical solutions for common compatibility issues enc
 - Investigation revealed a **race condition** in the `systemd` user session.
 - The GNOME media keys daemon (`gsd-media-keys`) starts before the `pipewire-pulse` audio server is fully initialized. When `gsd-media-keys` tries to find the default sink to bind the volume keys, it fails (`Unable to get default sink`) and drops the key bindings.
 - **Fix:** We inject a `systemd` user service override configuration using `After=pipewire-pulse.service`. This explicitly forces the media key daemon to wait for the audio subsystem to spin up first, completely eliminating the race condition.
+
+### 4. External USB NTFS Mount Failure & Wireless Mouse Dropouts (`usb-ntfs-mouse-fix/`)
+**Issue:** Inserting an NTFS USB stick (including Ventoy drives) fails in the file manager with a generic mount error (`wrong fs type, bad option, bad superblock`). Separately, an ASUS ROG OMNI 2.4G receiver disconnects and re-enumerates frequently.
+**Technical Approach:**
+- Kernel logs show `ntfs3: volume is dirty and "force" flag is not set!`. Ubuntu 26.04 defaults to the in-kernel `ntfs3` driver, which refuses dirty NTFS volumes; the GUI error message is misleading.
+- Mouse logs show recurring `USB disconnect` events: USB autosuspend puts the receiver to sleep and wake/re-enumeration fails.
+- **Fix (add dedicated files only; do not touch unrelated system configs such as GRUB/kernel cmdline):**
+  - udev rule: on insert, run `ntfsfix -d` only for removable USB NTFS partitions.
+  - `/etc/udisks2/mount_options.conf`: override NTFS only — prefer `ntfs-3g`, allow `ntfs3` `force`.
+  - udev rule: disable autosuspend only for the ROG OMNI receiver (`0b05:1ace`).
+- Optional Windows helper `Clear-UsbNtfsDirty.ps1` for dual-boot (manual; does not modify Windows system files by default).
+
