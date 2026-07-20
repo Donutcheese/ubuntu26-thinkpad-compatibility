@@ -90,6 +90,9 @@ This repository provides technical solutions for common compatibility issues enc
 
 ### 5. Legacy Wine Application Compatibility (`wine-ace-compatibility/`)
 **Case study:** Spark Store Yinxiang Biji 7.2.6 silently exited on Ubuntu 26.04.
+
+![Legacy Wine application compatibility repair flow on Ubuntu 26.04](wine-ace-compatibility/compatibility-flow.svg)
+
 **Technical Approach:**
 - Diagnose host packages, AppArmor, ACE/Wine, i386 dependencies, ABI loader
   precedence, rendering, and visible behavior as separate layers.
