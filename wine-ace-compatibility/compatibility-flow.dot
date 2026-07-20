@@ -1,0 +1,114 @@
+digraph CompatibilityRepair {
+  graph [
+    rankdir=TB,
+    bgcolor="#F7F8FC",
+    pad="0.35",
+    nodesep="0.38",
+    ranksep="0.58 equally",
+    splines=ortho,
+    newrank=true,
+    compound=true,
+    fontname="DejaVu Sans",
+    label="Legacy Wine Application Compatibility Repair on Ubuntu 26.04",
+    labelloc=t,
+    fontsize=24,
+    fontcolor="#172033"
+  ];
+
+  node [
+    shape=rect,
+    style="rounded,filled",
+    fontname="DejaVu Sans",
+    fontsize=11,
+    margin="0.18,0.12",
+    width=3.15,
+    height=0.62,
+    color="#CBD3E1",
+    penwidth=1.25,
+    fontcolor="#172033",
+    fillcolor="#FFFFFF"
+  ];
+
+  edge [
+    fontname="DejaVu Sans",
+    fontsize=9,
+    color="#6B7893",
+    fontcolor="#53617A",
+    penwidth=1.35,
+    arrowsize=0.72
+  ];
+
+  start [label="INCOMPATIBLE\nClick → silent exit", fillcolor="#FFE9EC", color="#E4546B", fontcolor="#8D2032", penwidth=1.8];
+
+  subgraph cluster_host {
+    label="LAYER 1 · HOST PACKAGE STATE";
+    color="#B9C9F5"; fillcolor="#EEF3FF"; style="rounded,filled";
+    fontname="DejaVu Sans Bold"; fontsize=12; fontcolor="#31539A"; margin=18;
+    pkg_probe [label="Inspect dpkg state\nunpacked / half-configured"];
+    pkg_fix [label="Complete package configuration\nEvernote + Deepin Wine bridge", fillcolor="#DCE7FF", color="#7193E0"];
+  }
+
+  subgraph cluster_security {
+    label="LAYER 2 · SANDBOX SECURITY";
+    color="#D0BDF4"; fillcolor="#F5F0FF"; style="rounded,filled";
+    fontname="DejaVu Sans Bold"; fontsize=12; fontcolor="#6942A4"; margin=18;
+    ns_test [label="Isolate the ACE boundary\nbookworm-run true"];
+    aa_log [label="Read kernel audit evidence\nunpriv_bwrap capability denials"];
+    aa_fix [label="Allow only observed capabilities\nReload and retest AppArmor", fillcolor="#E9DDFF", color="#9A72D6"];
+  }
+
+  subgraph cluster_bridge {
+    label="LAYER 3 · ACE / WINE BRIDGE";
+    color="#9FD9D0"; fillcolor="#ECFAF7"; style="rounded,filled";
+    fontname="DejaVu Sans Bold"; fontsize=12; fontcolor="#147469"; margin=18;
+    wine_probe [label="Verify Wine inside ACE\nwine --version"];
+    arch_fix [label="Install matching i386 runtime\nMesa · GLX · FreeType · Fontconfig", fillcolor="#D7F4EE", color="#53AD9E"];
+  }
+
+  subgraph cluster_abi {
+    label="LAYER 4 · ABI AND DYNAMIC LOADER";
+    color="#F3C887"; fillcolor="#FFF8EA"; style="rounded,filled";
+    fontname="DejaVu Sans Bold"; fontsize=12; fontcolor="#9A5B08"; margin=18;
+    gl_debug [label="Trace the real loader path\nLIBGL_DEBUG · ldd · WINEDEBUG"];
+    abi_fix [label="Hybrid precedence\nKeep Deepin DLLs; prefer Bookworm i386 ABI", fillcolor="#FFF0CF", color="#E1A94E"];
+  }
+
+  subgraph cluster_render {
+    label="LAYER 5 · APPLICATION RENDERING POLICY";
+    color="#F1B5A7"; fillcolor="#FFF2EF"; style="rounded,filled";
+    fontname="DejaVu Sans Bold"; fontsize=12; fontcolor="#A74531"; margin=18;
+    gpu_test [label="Can container Mesa drive this GPU?"];
+    native [label="Use native acceleration", fillcolor="#E3F6E9", color="#72B985"];
+    llvmpipe [label="Per-app llvmpipe fallback\nNever global /etc/environment", fillcolor="#FFE2DA", color="#DE806B"];
+    launch [label="Launch target executable\nEvernote.exe"];
+  }
+
+  subgraph cluster_validation {
+    label="LAYER 6 · USER-VISIBLE VALIDATION";
+    color="#A7D4F2"; fillcolor="#EEF8FF"; style="rounded,filled";
+    fontname="DejaVu Sans Bold"; fontsize=12; fontcolor="#236A9B"; margin=18;
+    process [label="Process stays alive\nWine services + application"];
+    behavior [label="Validate window · fonts · login\nnetwork · sync · clipboard · relaunch"];
+  }
+
+  done [label="COMPATIBLE AND USABLE\nScoped, reversible, evidence-backed", fillcolor="#DDF5E5", color="#43A568", fontcolor="#176B37", penwidth=1.8];
+
+  start -> pkg_probe;
+  pkg_probe -> pkg_fix [xlabel="repair"];
+  pkg_fix -> ns_test;
+  ns_test -> aa_log [xlabel="namespace denied"];
+  aa_log -> aa_fix [xlabel="least privilege"];
+  aa_fix -> wine_probe;
+  wine_probe -> arch_fix [xlabel="bridge ready"];
+  arch_fix -> gl_debug;
+  gl_debug -> abi_fix [xlabel="GLIBC collision"];
+  abi_fix -> gpu_test;
+  { rank=same; native; llvmpipe; }
+  gpu_test -> native [xlabel="yes"];
+  gpu_test -> llvmpipe [xlabel="no"];
+  native -> launch;
+  llvmpipe -> launch;
+  launch -> process;
+  process -> behavior;
+  behavior -> done;
+}
