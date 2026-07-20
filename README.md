@@ -40,6 +40,9 @@
 
 ### 5. Spark / Deepin Wine / ACE 旧版 Windows 应用兼容方案 (`wine-ace-compatibility/`)
 **案例：** 星火应用商店的印象笔记 7.2.6 在 Ubuntu 26.04 上点击后无窗口、静默退出。
+
+![Ubuntu 26.04 旧版 Wine 应用兼容性修复流程图（英文）](wine-ace-compatibility/compatibility-flow.svg)
+
 **技术路线：**
 - 按“宿主包状态 → AppArmor 沙箱 → ACE/Wine 桥接 → i386 依赖 → ABI 动态加载 → 应用渲染 → 行为验证”逐层定位。
 - 根据内核审计日志为嵌套 Bubblewrap 添加最小 capability 集，而不是放开整个 AppArmor 配置。
