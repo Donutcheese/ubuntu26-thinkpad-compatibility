@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Example fragment. Adapt only after verifying and backing up the vendor
+# wrapper. Variable names follow Deepin Wine 6 packaging conventions.
+
+runtime_path=/opt/deepinwine/runtime-i386
+
+if [[ -f "$runtime_path/init_runtime.sh" && "$wine" == "$wine32" ]]; then
+    source "$runtime_path/init_runtime.sh"
+    init_runtime
+
+    # Keep Deepin Wine DLLs, but prefer Bookworm's matched i386 ABI.
+    export LD_LIBRARY_PATH="/usr/lib/i386-linux-gnu:/lib/i386-linux-gnu:$LD_LIBRARY_PATH"
+    export LIBGL_DRIVERS_PATH="/usr/lib/i386-linux-gnu/dri"
+    export WINELDPATH="/lib/ld-linux.so.2"
+
+    export WINELOADERNOEXEC=1
+    winepreloader="/opt/$name/bin/wine-preloader"
+    WINEPREFIX="$wineprefix" WINELOADER="$wineloader" \
+        WINEDEBUG="$winedebug" "$winepreloader" "$wine" "$@"
+else
+    WINEPREFIX="$wineprefix" WINELOADER="$wineloader" \
+        WINEDEBUG="$winedebug" "$wine" "$@"
+fi

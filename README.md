@@ -38,6 +38,16 @@
   - udev 规则：仅对 ROG OMNI 接收器 (`0b05:1ace`) 关闭 autosuspend。
 - 双系统 Windows 侧提供可选 `Clear-UsbNtfsDirty.ps1`（手动运行；默认不改 Windows 系统文件）。
 
+### 5. Spark / Deepin Wine / ACE 旧版 Windows 应用兼容方案 (`wine-ace-compatibility/`)
+**案例：** 星火应用商店的印象笔记 7.2.6 在 Ubuntu 26.04 上点击后无窗口、静默退出。
+**技术路线：**
+- 按“宿主包状态 → AppArmor 沙箱 → ACE/Wine 桥接 → i386 依赖 → ABI 动态加载 → 应用渲染 → 行为验证”逐层定位。
+- 根据内核审计日志为嵌套 Bubblewrap 添加最小 capability 集，而不是放开整个 AppArmor 配置。
+- 补齐 Bookworm 容器中的 32 位 Mesa、GLX、FreeType 与 Fontconfig。
+- 保留 Deepin Wine 私有 DLL，同时让 Bookworm i386 glibc/Mesa 优先，解决 ABI 冲突。
+- 容器旧 Mesa 无法驱动新款 Intel 核显时，仅对目标应用启用 llvmpipe。
+- 提供英文案例、只读诊断脚本、Graphviz 源文件和已渲染 SVG/PNG。
+
 ---
 
 # Ubuntu 26.04 Compatibility Fixes (Lenovo ThinkPad)
@@ -78,3 +88,15 @@ This repository provides technical solutions for common compatibility issues enc
   - udev rule: disable autosuspend only for the ROG OMNI receiver (`0b05:1ace`).
 - Optional Windows helper `Clear-UsbNtfsDirty.ps1` for dual-boot (manual; does not modify Windows system files by default).
 
+### 5. Legacy Wine Application Compatibility (`wine-ace-compatibility/`)
+**Case study:** Spark Store Yinxiang Biji 7.2.6 silently exited on Ubuntu 26.04.
+**Technical Approach:**
+- Diagnose host packages, AppArmor, ACE/Wine, i386 dependencies, ABI loader
+  precedence, rendering, and visible behavior as separate layers.
+- Derive the minimum Bubblewrap capability set from kernel audit evidence.
+- Add the missing Bookworm i386 graphics and font runtime.
+- Preserve Deepin Wine DLLs while preferring the Bookworm i386 glibc/Mesa ABI.
+- Apply llvmpipe only to the affected application when container Mesa is too
+  old for the host GPU.
+- Includes an English case study, collector, wrapper example, Graphviz source,
+  and rendered SVG/PNG flow.
